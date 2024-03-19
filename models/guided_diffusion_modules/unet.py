@@ -521,6 +521,7 @@ class UNet(nn.Module):
             SiLU(),
             zero_module(nn.Conv2d(input_ch, out_channel, 3, padding=1)),
         )
+        self.skip_connection_sc = nn.Conv2d(6, 3, 1)
 
     def forward(self, x, gammas):
         """
@@ -542,7 +543,11 @@ class UNet(nn.Module):
             h = torch.cat([h, hs.pop()], dim=1)
             h = module(h, emb)
         h = h.type(x.dtype)
-        return self.out(h)
+
+        out = self.out(h)
+        out[:, 3:6] = out[:, 3:6] + self.skip_connection_sc(x)
+
+        return out
 
 if __name__ == '__main__':
     b, c, h, w = 3, 6, 64, 64
